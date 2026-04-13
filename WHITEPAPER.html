@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antikythera Digital: Spatial Differentiation Engine</title>
+    <style>
+        :root {
+            --bg-dark: #1a1a2e;
+            --bg-medium: #16213e;
+            --bg-light: #0f3460;
+            --accent: #e94560;
+            --text-primary: #eaeaea;
+            --text-secondary: #a0a0a0;
+            --code-bg: #0d0d1a;
+            --border: #2a2a4a;
+            --success: #00d9ff;
+            --warning: #ffcc00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.7;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, var(--bg-medium), var(--bg-light));
+            border-radius: 10px;
+            margin-bottom: 40px;
+            border: 1px solid var(--border);
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            color: var(--accent);
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+        }
+        
+        .header .subtitle {
+            font-size: 1.3em;
+            color: var(--text-secondary);
+        }
+        
+        .header .version {
+            margin-top: 20px;
+            padding: 5px 15px;
+            background: var(--code-bg);
+            border-radius: 20px;
+            display: inline-block;
+            font-family: monospace;
+        }
+        
+        /* Navigation */
+        .nav {
+            background: var(--bg-medium);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            border: 1px solid var(--border);
+        }
+        
+        .nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .nav a {
+            color: var(--text-primary);
+            text-decoration: none;
+            padding: 8px 16px;
+            background: var(--bg-light);
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav a:hover {
+            background: var(--accent);
+        }
+        
+        /* Sections */
+        .section {
+            background: var(--bg-medium);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+        }
+        
+        .section h2 {
+            color: var(--accent);
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .section h3 {
+            color: var(--success);
+            font-size: 1.3em;
+            margin: 25px 0 15px 0;
+        }
+        
+        .section h4 {
+            color: var(--warning);
+            font-size: 1.1em;
+            margin: 20px 0 10px 0;
+        }
+        
+        /* Tab system */
+        .tab-container {
+            margin: 20px 0;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 0;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            background: var(--bg-light);
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            background: var(--accent);
+        }
+        
+        .tab-btn:hover:not(.active) {
+            background: var(--bg-light);
+            filter: brightness(1.2);
+        }
+        
+        .tab-content {
+            display: none;
+            background: var(--code-bg);
+            padding: 25px;
+            border-radius: 0 10px 10px 10px;
+            border: 1px solid var(--border);
+            border-top: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Code blocks */
+        pre {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 15px 0;
+            border: 1px solid var(--border);
+        }
+        
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        
+        .inline-code {
+            background: var(--code-bg);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: var(--success);
+        }
+        
+        /* Diagrams */
+        .diagram {
+            background: var(--code-bg);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+        
+        .diagram pre {
+            text-align: left;
+            color: var(--success);
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        th {
+            background: var(--bg-light);
+            color: var(--accent);
+        }
+        
+        tr:nth-child(even) {
+            background: rgba(15, 52, 96, 0.3);
+        }
+        
+        /* Callout boxes */
+        .callout {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+        
+        .callout.grug {
+            background: rgba(0, 217, 255, 0.1);
+            border-color: var(--success);
+        }
+        
+        .callout.academic {
+            background: rgba(233, 69, 96, 0.1);
+            border-color: var(--accent);
+        }
+        
+        .callout.warning {
+            background: rgba(255, 204, 0, 0.1);
+            border-color: var(--warning);
+        }
+        
+        .callout-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .callout.grug .callout-title {
+            color: var(--success);
+        }
+        
+        .callout.academic .callout-title {
+            color: var(--accent);
+        }
+        
+        /* Math section */
+        .math-block {
+            background: var(--code-bg);
+            padding: 25px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 1.1em;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .math-block .equation {
+            font-style: italic;
+            margin: 10px 0;
+            font-size: 1.2em;
+        }
+        
+        .math-block .label {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        
+        /* PHP Manual Style */
+        .php-manual {
+            background: #f0f0f0;
+            color: #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .php-manual .php-header {
+            background: #4f5b93;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+        }
+        
+        .php-manual .php-content {
+            padding: 20px;
+        }
+        
+        .php-manual .function-name {
+            font-family: monospace;
+            background: #e0e0e0;
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: #4f5b93;
+        }
+        
+        .php-manual h4 {
+            color: #4f5b93;
+            border-bottom: 2px solid #4f5b93;
+            padding-bottom: 5px;
+        }
+        
+        .php-manual pre {
+            background: #fff;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+        
+        .php-manual code {
+            color: #333;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .tab-buttons {
+                flex-direction: column;
+            }
+            
+            .tab-btn {
+                border-radius: 5px;
+            }
+            
+            .tab-content {
+                border-radius: 0 0 10px 10px;
+                border: 1px solid var(--border);
+            }
+        }
+        
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .section {
+                background: white;
+                border: 1px solid #ccc;
+            }
+            
+            .nav {
+                display: none;
+            }
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <header class="header">
+        <h1>⚙️ Antikythera Digital</h1>
+        <p class="subtitle">Spatial Differentiation Engine v2.0</p>
+        <p class="version">GEOM-CALC Architecture | GrugBot420</p>
+    </header>
+
+    <nav class="nav">
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#philosophy">Philosophy</a></li>
+            <li><a href="#mathematics">Mathematics</a></li>
+            <li><a href="#lambda">Lambda Calculus</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#flowcharts">Flow Charts</a></li>
+            <li><a href="#userguide">User Guide</a></li>
+        </ul>
+    </nav>
+
+    <!-- ========== OVERVIEW ========== -->
+    <section id="overview" class="section">
+        <h2>1. Overview</h2>
+        
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('overview-grug', this)">🦴 Grug for Dummies</button>
+                <button class="tab-btn" onclick="showTab('overview-academic', this)">🎓 Academic</button>
+            </div>
+            <div id="overview-grug" class="tab-content active">
+                <div class="callout grug">
+                    <div class="callout-title">🦴 Grug Says:</div>
+                    <p><strong>Problem:</strong> Math hard. Many symbols. Chain rule hurt grug brain.</p>
+                    <p><strong>Discovery:</strong> Shape already know math. Shape tell grug answer when grug poke.</p>
+                    <p><strong>Result:</strong> No calculate. Just poke. Shape IS calculation.</p>
+                </div>
+                
+                <pre>
+TRADITIONAL WAY (grug no like):
+┌─────────────────────────────────────┐
+│ 1. Write function f(x,y,z)          │
+│ 2. Apply chain rule 47 times        │
+│ 3. Cry                              │
+│ 4. Get wrong answer anyway          │
+│ 5. Debug symbolic mess              │
+│ Total time: MANY MOONS              │
+└─────────────────────────────────────┘
+
+ANTIKYTHERA WAY (grug like):
+┌─────────────────────────────────────┐
+│ 1. Build shape                      │
+│ 2. Poke shape                       │
+│ 3. Shape give answer                │
+│ Total time: POKE TIME               │
+└─────────────────────────────────────┘
+
+grug discover secret: poking cheap, calculating expensive
+                </pre>
+            </div>
+            <div id="overview-academic" class="tab-content">
+                <div class="callout academic">
+                    <div class="callout-title">📐 Academic Formulation:</div>
+                    <p>Antikythera Digital implements <strong>spatial differentiation</strong> on implicit surfaces represented as signed distance fields (SDFs). Rather than computing derivatives through symbolic differentiation (SD) or automatic differentiation (AD), the engine exploits the geometric structure of preloaded manifolds.</p>
+                </div>
+                
+                <p>The fundamental insight is that for a signed distance field φ: ℝ³ → ℝ, the spatial derivatives exist as properties of the field itself, independent of symbolic representation. By preloading the SDF as a spatial data structure, we transform differentiation from a computational procedure into a measurement operation.</p>
+                
+                <h4>Key Advantages:</h4>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Compositional Complexity Independence:</strong> The cost of ∇f at point p does not depend on the syntactic complexity of f's definition</li>
+                    <li><strong>Numerical Stability:</strong> Finite difference operations on SDFs inherit the field's distance properties</li>
+                    <li><strong>Arbitrary Operators:</strong> dⁿf/dxⁱdyʲdzᵏ operators constructable via Vandermonde stencils</li>
+                    <li><strong>CSG Preservation:</strong> Boolean operations on SDFs preserve distance field properties</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== PHILOSOPHY ========== -->
+    <section id="philosophy" class="section">
+        <h2>2. Philosophy & Design Doctrine</h2>
+        
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('phil-grug', this)">🦴 Grug for Dummies</button>
+                <button class="tab-btn" onclick="showTab('phil-academic', this)">🎓 Academic</button>
+            </div>
+            <div id="phil-grug" class="tab-content active">
+                <div class="callout grug">
+                    <div class="callout-title">🦴 Grug Wisdom:</div>
+                </div>
+                
+                <pre>
+═══════════════════════════════════════════════════════════════
+                    GRUG COMPUTING DOCTRINE
+═══════════════════════════════════════════════════════════════
+
+RULE 1: PRELOAD OVER SEARCH
+─────────────────────────
+grug no like chase rabbit
+grug put rabbit in cage before needed
+when grug want rabbit, rabbit already there
+preloaded field = rabbit in cage
+
+
+RULE 2: ALIGNMENT OVER CALCULATION  
+─────────────────────────────────
+grug watch elder align stones
+stones stay aligned without grug doing anything
+structure do work, not grug
+geometry = aligned stones
+
+
+RULE 3: TOLERANCE OVER PRECISION
+───────────────────────────────
+grug see modern man measure exactly 10.000001 units
+modern man sad when world not exactly 10.000001
+grug use tolerance band
+grug happy when world approximately good enough
+AK-47 work because tolerance, not precision
+
+
+RULE 4: TOPOLOGY OVER SYMBOLS
+────────────────────────────
+symbol change, shape stay same
+grug trust shape, not squiggles on paper
+shape cannot lie
+symbols can lie
+
+
+RULE 5: MEASUREMENT OVER DERIVATION
+─────────────────────────────────
+elder say: "to know temperature, touch thing"
+elder not say: "to know temperature, calculate from first principles"
+grug touch shape, shape tell gradient
+measurement cheap, derivation expensive
+
+
+RULE 6: NATURE HAS ANSWERS
+────────────────────────
+nature already solve many problem
+nature not need grug help
+grug listen to nature
+nature not listen to grug theory
+                </pre>
+            </div>
+            <div id="phil-academic" class="tab-content">
+                <div class="callout academic">
+                    <div class="callout-title">📐 Theoretical Framework:</div>
+                </div>
+                
+                <h3>2.1 On Computational Framing</h3>
+                <p>The standard computational narrative positions symbolic manipulation as fundamental and physical implementation as derivative. This reflects a <strong>Platonic bias</strong> in Western intellectual tradition—the belief that abstract forms precede and outrank material instantiation.</p>
+                
+                <p>Antikythera inverts this hierarchy. We assert that:</p>
+                
+                <div class="math-block">
+                    <div class="equation">Computation ≡ Constrained State Evolution on Manifold M</div>
+                    <div class="label">Definition 2.1: Computation as Geometry</div>
+                </div>
+                
+                <p>Under this definition, Turing computation becomes a <strong>special case</strong>—one particular method of organizing state constraints through recursive meta-instructions. It is not the general case.</p>
+                
+                <h3>2.2 On Metric Fetishism</h3>
+                <p>Modern engineering suffers from <strong>metric precision bias</strong>—the belief that exact numerical specification is intrinsically superior to tolerance-band specification. This bias leads to:</p>
+                
+                <ul style="margin-left: 20px;">
+                    <li>Brittle systems that fail outside narrow operating parameters</li>
+                    <li>Expensive manufacturing requirements</li>
+                    <li>Loss of repairability and adaptability</li>
+                    <li>Computational overhead maintaining exact representations</li>
+                </ul>
+                
+                <p>The <strong>AK-47 Slack Principle</strong> (named after the famously reliable assault rifle) states that robustness scales with tolerance slack, not precision. Antikythera implements this via the <span class="inline-code">throttle</span> parameter controlling finite difference step size.</p>
+                
+                <h3>2.3 On Historical Continuity</h3>
+                <p>The Antikythera mechanism (c. 100 BCE) demonstrates that sophisticated computation does not require symbolic machinery. The device computed lunar phases, eclipse cycles, and planetary positions through:</p>
+                
+                <ul style="margin-left: 20px;">
+                    <li>Geometric relationships encoded in gear ratios</li>
+                    <li>Period correction via differential gearing</li>
+                    <li>Output as continuous rotational position</li>
+                </ul>
+                
+                <p>This represents <strong>computation by alignment</strong>—the same principle underlying the Antikythera Digital engine. The modern prejudice against such systems reflects a category error: mistaking the absence of familiar notation for the absence of computational sophistication.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== MATHEMATICS ========== -->
+    <section id="mathematics" class="section">
+        <h2>3. Formal Mathematics</h2>
+        
+        <h3>3.1 Signed Distance Fields</h3>
+        
+        <div class="math-block">
+            <div class="equation">φ: ℝ³ → ℝ</div>
+            <div class="label">Definition 3.1: SDF Mapping</div>
+        </div>
+        
+        <p>For a closed set Ω ⊂ ℝ³, the signed distance field φ_Ω is defined as:</p>
+        
+        <div class="math-block">
+            <div class="equation">φ_Ω(x) = d(x, ∂Ω) · sgn(x)</div>
+            <div class="equation">where sgn(x) = +1 if x ∈ Ωᶜ, -1 if x ∈ Ω</div>
+            <div class="label">Definition 3.2: Signed Distance Function</div>
+        </div>
+        
+        <h3>3.2 Spatial Gradient</h3>
+        
+        <div class="math-block">
+            <div class="equation">∇φ(x,y,z) = ( ∂φ/∂x, ∂φ/∂y, ∂φ/∂z )</div>
+            <div class="label">Definition 3.3: Gradient Operator</div>
+        </div>
+        
+        <p>For exact SDFs, the gradient has unit magnitude on the surface:</p>
+        
+        <div class="math-block">
+            <div class="equation">|∇φ(x)| = 1 ∀ x ∉ Ω</div>
+            <div class="label">Property 3.1: Eikonal Equation</div>
+        </div>
+        
+        <h3>3.3 Finite Difference Approximation</h3>
+        
+        <p>Antikythera computes gradients via centered finite differences:</p>
+        
+        <div class="math-block">
+            <div class="equation">∂φ/∂x ≈ [φ(x+h, y, z) - φ(x-h, y, z)] / (2h)</div>
+            <div class="label">Equation 3.1: Central Difference</div>
+        </div>
+        
+        <p>With compliance slack parameter h (the "throttle") controlling tolerance:</p>
+        
+        <div class="math-block">
+            <div class="equation">h ∈ [ε, H_max] where ε ≈ 10⁻⁸, H_max ≈ 0.1</div>
+            <div class="label">Parameter 3.1: Compliance Slack Range</div>
+        </div>
+        
+        <h3>3.4 Curvature Operators</h3>
+        
+        <p>Mean curvature on the implicit surface:</p>
+        
+        <div class="math-block">
+            <div class="equation">κ = ∇ · (∇φ / |∇φ|) / 2</div>
+            <div class="label">Equation 3.2: Mean Curvature</div>
+        </div>
+        
+        <p>Laplacian (trace of Hessian):</p>
+        
+        <div class="math-block">
+            <div class="equation">Δφ = ∇²φ = ∂²φ/∂x² + ∂²φ/∂y² + ∂²φ/∂z²</div>
+            <div class="label">Equation 3.3: Laplacian Operator</div>
+        </div>
+        
+        <h3>3.5 Arbitrary Differential Operators</h3>
+        
+        <p>For operator dⁿf/dxⁱdyʲdzᵏ where i + j + k = n:</p>
+        
+        <div class="math-block">
+            <div class="equation">D^(i,j,k)φ = ∂^(i+j+k)φ / (∂xⁱ ∂yʲ ∂zᵏ)</div>
+            <div class="label">Definition 3.4: Mixed Partial Derivative</div>
+        </div>
+        
+        <p>Computed via Vandermonde stencil construction:</p>
+        
+        <div class="math-block">
+            <div class="equation">D^(i,j,k)φ ≈ Σ c_m φ(x + δ_m) / h^n</div>
+            <div class="equation">where c_m are stencil coefficients, δ_m are offset vectors</div>
+            <div class="label">Equation 3.4: Stencil Approximation</div>
+        </div>
+        
+        <h3>3.6 CSG Operations on SDFs</h3>
+        
+        <p>Boolean union:</p>
+        <div class="math-block">
+            <div class="equation">φ_{A∪B}(x) = min(φ_A(x), φ_B(x))</div>
+            <div class="label">Equation 3.5: Union</div>
+        </div>
+        
+        <p>Boolean intersection:</p>
+        <div class="math-block">
+            <div class="equation">φ_{A∩B}(x) = max(φ_A(x), φ_B(x))</div>
+            <div class="label">Equation 3.6: Intersection</div>
+        </div>
+        
+        <p>Boolean subtraction:</p>
+        <div class="math-block">
+            <div class="equation">φ_{A-B}(x) = max(φ_A(x), -φ_B(x))</div>
+            <div class="label">Equation 3.7: Subtraction</div>
+        </div>
+        
+        <p>Smooth blend (polynomial):</p>
+        <div class="math-block">
+            <div class="equation">φ_{blend}(x) = k · (φ_A + φ_B - √(φ_A² + φ_B² - 2kφ_Aφ_B + k²))</div>
+            <div class="equation">where k ∈ (0, 1) controls smoothness</div>
+            <div class="label">Equation 3.8: Smooth Union</div>
+        </div>
+        
+        <h3>3.7 Geodesic Computation</h3>
+        
+        <p>Geodesics are locally shortest paths on the manifold. On implicit surfaces:</p>
+        
+        <div class="math-block">
+            <div class="equation">γ'(t) = v(t) where v·∇φ = 0</div>
+            <div class="equation">(velocity tangent to surface)</div>
+            <div class="label">Constraint 3.1: Surface Constraint</div>
+        </div>
+        
+        <p>Computed via gradient descent on the energy functional:</p>
+        
+        <div class="math-block">
+            <div class="equation">E[γ] = ∫₀¹ |γ'(t)|² dt</div>
+            <div class="label">Equation 3.9: Path Energy</div>
+        </div>
+    </section>
+
+    <!-- ========== LAMBDA CALCULUS ========== -->
+    <section id="lambda" class="section">
+        <h2>4. Lambda Calculus Formulation</h2>
+        
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="showTab('lambda-grug', this)">🦴 Grug for Dummies</button>
+                <button class="tab-btn" onclick="showTab('lambda-academic', this)">🎓 Academic</button>
+            </div>
+            <div id="lambda-grug" class="tab-content active">
+                <div class="callout grug">
+                    <div class="callout-title">🦴 Grug Says:</div>
+                    <p>Lambda is just "thing that make other thing." Grug call it "poker." Poker poke shape, shape give number. That's all. Don't overthink.</p>
+                </div>
+                
+                <pre>
+LAMBDA FANCY WORD FOR "FUNCTION MACHINE"
+───────────────────────────────────────
+
+fancy man write: λx. x + 1
+grug write: thing what add one
+
+fancy man write: (λx. λy. x + y) 3 4
+grug write: add 3 and 4 = 7
+
+fancy man write: Y = λf. (λx. f (x x)) (λx. f (x x))
+grug write: thing that make other thing forever
+           (grug head hurt now)
+
+
+ANTIKYTHERA LAMBDA STYLE
+────────────────────────
+
+SDF is lambda:
+  φ = λ(x,y,z). distance_to_surface(x,y,z)
+  
+Gradient probe is lambda application:
+  ∇φ = λp. [φ(p+hêₓ) - φ(p-hêₓ)] / 2h
+  
+CSG is lambda composition:
+  union = λφ₁. λφ₂. λp. min(φ₁(p), φ₂(p))
+  
+User-defined differential is higher-order lambda:
+  D = λn. λspec. λφ. λp. stencil_compute(n, spec, φ, p)
+
+
+THE BIG IDEA
+────────────
+Everything in Antikythera is:
+  - A function (lambda)
+  - Applied to a point
+  - Returning a value
+
+But the function IS the geometry.
+Not a calculation. A measurement.
+                </pre>
+            </div>
+            <div id="lambda-academic" class="tab-content">
+                <h3>4.1 SDF as Lambda Term</h3>
+                <p>A signed distance field is fundamentally a function φ: ℝ³ → ℝ. In lambda calculus notation:</p>
+                
+                <div class="math-block">
+                    <div class="equation">φ = λ(x, y, z) ∈ ℝ³ . d((x,y,z), ∂Ω) · sgn((x,y,z), Ω)</div>
+                    <div class="label">Definition 4.1: SDF as Lambda</div>
+                </div>
+                
+                <h3>4.2 Pointwise Operators as Higher-Order Functions</h3>
+                <p>Spatial operators are higher-order functions mapping SDFs to SDFs:</p>
+                
+                <div class="math-block">
+                    <div class="equation">grad : (ℝ³ → ℝ) → (ℝ³ → ℝ³)</div>
+                    <div class="equation">grad = λφ. λp. (∂φ/∂x(p), ∂φ/∂y(p), ∂φ/∂z(p))</div>
+                    <div class="label">Definition 4.2: Gradient Operator</div>
+                </div>
+                
+                <div class="math-block">
+                    <div class="equation">laplacian : (ℝ³ → ℝ) → (ℝ³ → ℝ)</div>
+                    <div class="equation">laplacian = λφ. λp. ∂²φ/∂x²(p) + ∂²φ/∂y²(p) + ∂²φ/∂z²(p)</div>
+                    <div class="label">Definition 4.3: Laplacian Operator</div>
+                </div>
+                
+                <h3>4.3 CSG as Lambda Composition</h3>
+                
+                <div class="math-block">
+                    <div class="equation">union : (ℝ³ → ℝ) → (ℝ³ → ℝ) → (ℝ³ → ℝ)</div>
+                    <div class="equation">union = λφ₁. λφ₂. λp. min(φ₁(p), φ₂(p))</div>
+                    <div class="label">Definition 4.4: Union Combinator</div>
+                </div>
+                
+                <div class="math-block">
+                    <div class="equation">intersect = λφ₁. λφ₂. λp. max(φ₁(p), φ₂(p))</div>
+                    <div class="label">Definition 4.5: Intersection Combinator</div>
+                </div>
+                
+                <div class="math-block">
+                    <div class="equation">subtract = λφ₁. λφ₂. λp. max(φ₁(p), -φ₂(p))</div>
+                    <div class="label">Definition 4.6: Subtraction Combinator</div>
+                </div>
+                
+                <h3>4.4 Arbitrary Differentials</h3>
+                <p>The differential operator generator:</p>
+                
+                <div class="math-block">
+                    <div class="equation">diff : ℕ × Spec → ((ℝ³ → ℝ) → (ℝ³ → ℝ))</div>
+                    <div class="equation">diff = λn. λ(i,j,k). λφ. λp. Σ cₘ · φ(p + δₘ) / hⁿ</div>
+                    <div class="equation">where i + j + k = n</div>
+                    <div class="label">Definition 4.7: Differential Generator</div>
+                </div>
+                
+                <h3>4.5 Type Signatures</h3>
+                
+                <pre>
+-- Core types
+SDF        : ℝ³ → ℝ
+Point      : ℝ³
+Vector     : ℝ³
+Scalar     : ℝ
+
+-- Operators
+probe      : SDF → Point → Scalar
+gradient   : SDF → Point → Vector
+normal     : SDF → Point → Vector
+curvature  : SDF → Point → Scalar
+laplacian  : SDF → Point → Scalar
+
+-- Combinators
+union      : SDF → SDF → SDF
+intersect  : SDF → SDF → SDF
+subtract   : SDF → SDF → SDF
+blend      : SDF → SDF → ℝ → SDF
+morph      : SDF → SDF → ℝ → SDF
+
+-- Higher-order
+compose    : (SDF → SDF) → (SDF → SDF) → (SDF → SDF)
+lift       : (Point → Point) → (SDF → SDF)
+                </pre>
+                
+                <h3>4.6 Geometric Lambda Calculus</h3>
+                <p>We define a restricted lambda calculus where:</p>
+                <ol style="margin-left: 20px;">
+                    <li>All terms represent spatial functions</li>
+                    <li>Application is pointwise evaluation</li>
+                    <li>Composition preserves SDF properties</li>
+                    <li>Reduction corresponds to geometric simplification</li>
+                </ol>
+                
+                <div class="math-block">
+                    <div class="equation">Γ ⊢ φ : SDF ⟹ Γ ⊢ (operator φ) : SDF'</div>
+                    <div class="equation">(Operators preserve type class)</div>
+                    <div class="label">Type Preservation Property</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== ARCHITECTURE ========== -->
+    <section id="architecture" class="section">
+        <h2>5. System Architecture</h2>
+        
+        <h3>5.1 Core Data Structures</h3>
+        
+        <pre>
+╔═══════════════════════════════════════════════════════════════╗
+║                    ANTIKYTHERA MAP STRUCTURE                  ║
+╠═══════════════════════════════════════════════════════════════╣
+║                                                               ║
+║  AntikytheraMap                                               ║
+║  ├── gears::Dict{String, Cog}      # Named gear registry     ║
+║  ├── throttle::Float64             # Compliance slack (h)    ║
+║  └── scratch::Array{Float64,3}     # Evaluation cache        ║
+║                                                               ║
+║  Cog                                                          ║
+║  ├── sdf::Function                 # SDF evaluator           ║
+║  ├── bounds::Tuple{Float64,6}      # Bounding box            ║
+║  ├── parent::Union{Nothing,String} # CSG parentage           ║
+║  └── params::Dict{String,Any}      # Construction params     ║
+║                                                               ║
+║  MachineCrunch <: Exception                                   ║
+║  ├── msg::String                   # Error description       ║
+║  └── context::String               # Operation context       ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+        </pre>
+        
+        <h3>5.2 Evaluation Pipeline</h3>
+        
+        <pre>
+USER INPUT PARSING
+       │
+       ▼
+┌──────────────────┐
+│  CLI Dispatcher  │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐     ┌──────────────────┐
+│  Gear Registry   │────▶│  SDF Functions   │
+└────────┬─────────┘     └────────┬─────────┘
+         │                        │
+         ▼                        ▼
+┌──────────────────┐     ┌──────────────────┐
+│  Point Probe     │────▶│  Field Query     │
+└────────┬─────────┘     └────────┬─────────┘
+         │                        │
+         ▼                        ▼
+┌──────────────────┐     ┌──────────────────┐
+│  Finite Diff     │     │  Throttle (h)    │
+│  Computation     │────▶│  Compliance      │
+└────────┬─────────┘     └──────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Result Return   │
+└──────────────────┘
+        </pre>
+        
+        <h3>5.3 Module Organization</h3>
+        
+        <table>
+            <tr>
+                <th>Module</th>
+                <th>Responsibility</th>
+                <th>Key Functions</th>
+            </tr>
+            <tr>
+                <td>Geometry</td>
+                <td>SDF definitions and primitives</td>
+                <td>sphere, box, torus, cylinder, gyroid</td>
+            </tr>
+            <tr>
+                <td>Operators</td>
+                <td>Differential operators</td>
+                <td>gradient, laplacian, curvature, divergence</td>
+            </tr>
+            <tr>
+                <td>CSG</td>
+                <td>Boolean combinations</td>
+                <td>union, intersect, subtract, blend, morph</td>
+            </tr>
+            <tr>
+                <td>CLI</td>
+                <td>User interface</td>
+                <td>parse_command, dispatch, format_output</td>
+            </tr>
+            <tr>
+                <td>JIT</td>
+                <td>Runtime compilation</td>
+                <td>parse_user_sdf, compile_expression</td>
+            </tr>
+        </table>
+    </section>
+
+    <!-- ========== FLOW CHARTS ========== -->
+    <section id="flowcharts" class="section">
+        <h2>6. Flow Charts & Diagrams</h2>
+        
+        <h3>6.1 Main Execution Flow</h3>
+        <div class="diagram">
+        <pre>
+                              ┌─────────────┐
+                              │   START     │
+                              └──────┬──────┘
+                                     │
+                                     ▼
+                         ┌───────────────────────┐
+                         │   Initialize Machine  │
+                         │   Create empty gears  │
+                         └───────────┬───────────┘
+                                     │
+                                     ▼
+                         ┌───────────────────────┐
+                         │   Set Throttle (h)    │
+                         │   Default: 1e-6       │
+                         └───────────┬───────────┘
+                                     │
+                                     ▼
+                    ┌────────────────────────────────┐
+                    │      MAIN LOOP (KEEPALIVE)     │
+                    └───────────────┬────────────────┘
+                                    │
+            ┌───────────────────────┼───────────────────────┐
+            │                       │                       │
+            ▼                       ▼                       ▼
+    ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+    │  Read Input   │      │  Parse Cmd    │      │  Dispatch     │
+    └───────┬───────┘      └───────┬───────┘      └───────┬───────┘
+            │                      │                      │
+            └──────────────────────┼──────────────────────┘
+                                   │
+                                   ▼
+                    ┌──────────────────────────┐
+                    │    Execute Command       │
+                    └───────────┬──────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+        ▼                       ▼                       ▼
+┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+│  GEAR OP      │      │  QUERY OP     │      │  CSG OP       │
+│  /gear        │      │  /probe       │      │  /union       │
+│  /sdf         │      │  /gradient    │      │  /intersect   │
+│               │      │  /curvature   │      │  /subtract    │
+│               │      │  /flow        │      │  /blend       │
+│               │      │  /geodesic    │      │  /morph       │
+└───────────────┘      └───────────────┘      └───────────────┘
+        </pre>
+        </div>
+        
+        <h3>6.2 Gradient Computation Flow</h3>
+        <div class="diagram">
+        <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                    GRADIENT COMPUTATION                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  INPUT: φ (SDF), p = (x, y, z) (point), h (throttle)           │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  STEP 1: Fetch SDF function from gear registry          │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                          │                                      │
+│                          ▼                                      │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  STEP 2: Evaluate φ at central point p                  │   │
+│  │          (optional, for reference)                       │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                          │                                      │
+│                          ▼                                      │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  STEP 3: Compute partial derivatives via finite diff    │   │
+│  │                                                          │   │
+│  │          ∂φ/∂x ≈ [φ(x+h,y,z) - φ(x-h,y,z)] / 2h         │   │
+│  │          ∂φ/∂y ≈ [φ(x,y+h,z) - φ(x,y-h,z)] / 2h         │   │
+│  │          ∂φ/∂z ≈ [φ(x,y,z+h) - φ(x,y,z-h)] / 2h         │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                          │                                      │
+│                          ▼                                      │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  STEP 4: Assemble gradient vector                       │   │
+│  │          ∇φ = (∂φ/∂x, ∂φ/∂y, ∂φ/∂z)                      │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                          │                                      │
+│                          ▼                                      │
+│  OUTPUT: ∇φ ∈ ℝ³                                               │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+        </pre>
+        </div>
+        
+        <h3>6.3 CSG Boolean Operations</h3>
+        <div class="diagram">
+        <pre>
+                    CSG BOOLEAN OPERATIONS
+                    ══════════════════════
+
+    INPUT: φ_A, φ_B (two SDFs)
+    
+    ┌─────────────────────────────────────────────────────┐
+    │                                                     │
+    │   UNION (A ∪ B)          INTERSECTION (A ∩ B)       │
+    │   ══════════════         ══════════════════════     │
+    │                                                     │
+    │   φ = min(φ_A, φ_B)      φ = max(φ_A, φ_B)          │
+    │                                                     │
+    │   ┌───┐  ┌───┐           ┌───┐  ┌───┐              │
+    │   │ A │  │ B │           │ A │  │ B │              │
+    │   └─┬─┘  └─┬─┘           └─┬─┘  └─┬─┘              │
+    │     │  ◯  │                 │  ◉  │                │
+    │   ──┴────┴──              ──┴────┴──               │
+    │    union                    intersect              │
+    │                                                     │
+    │   SUBTRACTION (A - B)                               │
+    │   ═══════════════════                               │
+    │                                                     │
+    │   φ = max(φ_A, -φ_B)                                │
+    │                                                     │
+    │   ┌───┐  ┌───┐                                      │
+    │   │ A │  │ B │                                      │
+    │   └─┬─┘  └─┬─┘                                      │
+    │     │  ◫  │                                         │
+    │   ──┴────┴──                                        │
+    │    subtract                                         │
+    │                                                     │
+    └─────────────────────────────────────────────────────┘
+
+    ◯ = combined region
+    ◉ = overlapping region only  
+    ◫ = A with B carved out
+        </pre>
+        </div>
+        
+        <h3>6.4 Streamline Integration (Flow)</h3>
+        <div class="diagram">
+        <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                   STREAMLINE INTEGRATION                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  INPUT: φ (SDF), p₀ (start point), n (steps)                   │
+│                                                                 │
+│  p₀ ──▶ p₁ ──▶ p₂ ──▶ p₃ ──▶ ... ──▶ pₙ                      │
+│         │      │      │              │                         │
+│         ▼      ▼      ▼              ▼                         │
+│       ∇φ(p₁) ∇φ(p₂) ∇φ(p₃)      ∇φ(pₙ)                        │
+│                                                                 │
+│  ALGORITHM:                                                     │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │  p_{i+1} = p_i + α · normalize(∇φ(p_i))                  │ │
+│  │                                                           │ │
+│  │  where:                                                   │ │
+│  │    α = step size (adaptive)                              │ │
+│  │    normalize(v) = v / |v|                                │ │
+│  │                                                           │ │
+│  │  PATH FOLLOWS GRADIENT ASCENT                            │ │
+│  │  (or descent if tracking to surface)                     │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  USES:                                                          │
+│  • Flow visualization                                          │
+│  • Gradient tracking                                           │
+│  • Surface approach paths                                      │
+│  • Field line tracing                                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+        </pre>
+        </div>
+        
+        <h3>6.5 Geodesic Path Computation</h3>
+        <div class="diagram">
+        <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                    GEODESIC COMPUTATION                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  INPUT: φ (SDF), p_start, p_end, n (steps)                     │
+│                                                                 │
+│          p_start ●─────┬─────┬─────┬─────● p_end               │
+│                  │     │     │     │                           │
+│                  ▼     ▼     ▼     ▼                           │
+│              point 1  point 2 ...                              │
+│              on φ=0   on φ=0                                   │
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │  ALGORITHM:                                               │ │
+│  │                                                           │ │
+│  │  1. Initialize: linear path from start to end            │ │
+│  │     γ₀(t) = start + t·(end - start), t ∈ [0,1]           │ │
+│  │                                                           │ │
+│  │  2. Project points to surface:                           │ │
+│  │     γ(t) = γ(t) - φ(γ(t))·∇φ(γ(t))/|∇φ(γ(t))|²          │ │
+│  │                                                           │ │
+│  │  3. Iteratively shorten path:                            │ │
+│  │     while not converged:                                 │ │
+│  │       - Move interior points toward neighbors             │ │
+│  │       - Re-project to surface                            │ │
+│  │       - Check length change                              │ │
+│  │                                                           │ │
+│  │  4. Return discretized path                              │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  OUTPUT: Array of points [p₀, p₁, ..., pₙ] on surface          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+        </pre>
+        </div>
+        
+        <h3>6.6 User-Defined SDF Parsing</h3>
+        <div class="diagram">
+        <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                  USER-DEFINED SDF PARSER                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  INPUT: expression string, parameter dict                       │
+│                                                                 │
+│  EXAMPLE: "/sdf \"x^2 + y^2 - z^2 - 1\" a=1 b=2"               │
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │  PARSING STAGES:                                          │ │
+│  │                                                           │ │
+│  │  1. TOKENIZE                                              │ │
+│  │     "x^2 + y^2 - z^2 - 1"                                 │ │
+│  │     → [x, ^, 2, +, y, ^, 2, -, z, ^, 2, -, 1]            │ │
+│  │                                                           │ │
+│  │  2. BUILD AST                                             │ │
+│  │           (-)                                             │ │
+│  │          /   \                                            │ │
+│  │        (-)    1                                           │ │
+│  │       /   \                                               │ │
+│  │     (+)    (^)                                            │ │
+│  │    /   \    \                                             │ │
+│  │  (^)   (^)   z                                            │ │
+│  │  /\    /\    \                                            │ │
+│  │ x  2  y  2    2                                           │ │
+│  │                                                           │ │
+│  │  3. COMPILE TO FUNCTION                                   │ │
+│  │     f(x,y,z) = x² + y² - z² - 1                          │ │
+│  │                                                           │ │
+│  │  4. REGISTER AS GEAR                                      │ │
+│  │     gears["user_sdf_N"] = Cog(f, bounds, ...)            │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  SUPPORTED OPERATORS: +, -, *, /, ^, sin, cos, sqrt, abs       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+        </pre>
+        </div>
+        
+        <h3>6.7 System State Diagram</h3>
+        <div class="diagram">
+        <pre>
+                    ┌─────────────────────────────────────┐
+                    │         ANTIKYTHERA MAP             │
+                    │         (Global State)              │
+                    └─────────────────┬───────────────────┘
+                                      │
+            ┌─────────────────────────┼─────────────────────────┐
+            │                         │                         │
+            ▼                         ▼                         ▼
+    ┌───────────────┐        ┌───────────────┐        ┌───────────────┐
+    │    GEARS      │        │   THROTTLE    │        │    SCRATCH    │
+    │   REGISTRY    │        │   (slack h)   │        │    BUFFER     │
+    ├───────────────┤        ├───────────────┤        ├───────────────┤
+    │ "sphere1" ──▶ │        │               │        │               │
+    │    Cog(...)   │        │  h = 1e-6     │        │  Cache for    │
+    │               │        │  (adjustable) │        │  evaluations  │
+    │ "box1" ──────▶│        │               │        │               │
+    │    Cog(...)   │        └───────────────┘        └───────────────┘
+    │               │
+    │ "union1" ────▶│
+    │    Cog(...)   │
+    │   (parent:    │
+    │   sphere1,    │
+    │    box1)      │
+    └───────────────┘
+    
+    STATE TRANSITIONS:
+    
+    ┌─────────┐  /gear   ┌─────────┐  /union   ┌─────────┐
+    │  EMPTY  │ ───────▶ │ PRIM-   │ ───────▶ │  CSG    │
+    │  MAP    │          │ ITIVES  │          │ BUILT   │
+    └─────────┘          └─────────┘          └─────────┘
+                                                  │
+                              /blend, /morph ─────┤
+                                                  ▼
+                                           ┌─────────┐
+                                           │ BLENDED │
+                                           │  SHAPE  │
+                                           └─────────┘
+        </pre>
+        </div>
+    </section>
+
+    <!-- ========== USER GUIDE ========== -->
+    <section id="userguide" class="section">
+        <h2>7. User Guide (PHP Manual Style)</h2>
+        
+        <div class="php-manual">
+            <div class="php-header">
+                Antikythera Digital Reference Manual
+            </div>
+            
+            <div class="php-content">
+                <h3>Table of Contents</h3>
+                <ul style="margin-left: 20px; margin-bottom: 20px;">
+                    <li><a href="#ug-installation">Installation</a></li>
+                    <li><a href="#ug-getting-started">Getting Started</a></li>
+                    <li><a href="#ug-gear-functions">Gear Functions</a></li>
+                    <li><a href="#ug-query-functions">Query Functions</a></li>
+                    <li><a href="#ug-csg-functions">CSG Functions</a></li>
+                    <li><a href="#ug-advanced">Advanced Usage</a></li>
+                    <li><a href="#ug-parameters">Parameter Reference</a></li>
+                </ul>
+                
+                <!-- Installation -->
+                <h4 id="ug-installation">Installation</h4>
+                
+                <p><strong>Requirements:</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>Julia 1.9 or higher</li>
+                    <li>No external dependencies required</li>
+                </ul>
+                
+                <pre>
+# Clone the repository
+$ git clone https://github.com/marshalldavidson61-arch/antikythera-digital.git
+
+# Navigate to directory
+$ cd antikythera-digital
+
+# Run the engine
+$ julia antikythera_diff_engine.jl
+                </pre>
+                
+                <p><strong>First Run:</strong> The engine will initialize an empty Antikythera map and present the CLI prompt:</p>
+                
+                <pre>
+Antikythera Digital v2.0 - Spatial Differentiation Engine
+Type /help for commands, /quit to exit
+
+antikythera> _
+                </pre>
+                
+                <!-- Getting Started -->
+                <h4 id="ug-getting-started">Getting Started</h4>
+                
+                <p><strong>Basic Workflow:</strong></p>
+                <ol style="margin-left: 20px;">
+                    <li>Initialize the machine (automatic on startup)</li>
+                    <li>Create gears (SDF primitives)</li>
+                    <li>Query geometric properties</li>
+                    <li>Combine shapes with CSG operations</li>
+                </ol>
+                
+                <p><strong>Example Session:</strong></p>
+                
+                <pre>
+antikythera> /gear sphere1 sphere 1.0
+Cast gear 'sphere1': sphere(r=1.0)
+
+antikythera> /probe sphere1 0.5 0.0 0.0
+φ(0.5, 0.0, 0.0) = -0.5000
+(inside surface by 0.5 units)
+
+antikythera> /gradient sphere1 0.5 0.0 0.0
+∇φ = [1.0000, 0.0000, 0.0000]
+
+antikythera> /curvature sphere1 0.0 0.0 1.0
+κ = 1.0000
+(mean curvature at surface point)
+                </pre>
+                
+                <!-- Gear Functions -->
+                <h4 id="ug-gear-functions">Gear Functions</h4>
+                
+                <p><span class="function-name">/gear</span> — Cast a gear from the library</p>
+                
+                <pre>
+Syntax: /gear <name> <type> [parameters...]
+
+Parameters:
+  name        - Unique identifier for the gear
+  type        - One of: sphere, box, torus, cylinder, gyroid, schwarz, twisted_torus
+  parameters  - Type-specific parameters (see below)
+                </pre>
+                
+                <p><strong>Gear Types and Parameters:</strong></p>
+                
+                <table style="width: 100%;">
+                    <tr>
+                        <th>Type</th>
+                        <th>Parameters</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>sphere</code></td>
+                        <td>radius</td>
+                        <td>Sphere centered at origin</td>
+                    </tr>
+                    <tr>
+                        <td><code>box</code></td>
+                        <td>width height depth</td>
+                        <td>Axis-aligned box</td>
+                    </tr>
+                    <tr>
+                        <td><code>torus</code></td>
+                        <td>major_radius minor_radius</td>
+                        <td>Torus in XY plane</td>
+                    </tr>
+                    <tr>
+                        <td><code>cylinder</code></td>
+                        <td>radius height</td>
+                        <td>Cylinder along Z axis</td>
+                    </tr>
+                    <tr>
+                        <td><code>gyroid</code></td>
+                        <td>period thickness</td>
+                        <td>Triply periodic surface</td>
+                    </tr>
+                    <tr>
+                        <td><code>schwarz</code></td>
+                        <td>period thickness</td>
+                        <td>Schwarz P minimal surface</td>
+                    </tr>
+                    <tr>
+                        <td><code>twisted_torus</code></td>
+                        <td>major minor twist</td>
+                        <td>Torus with twist deformation</td>
+                    </tr>
+                </table>
+                
+                <p><strong>Examples:</strong></p>
+                
+                <pre>
+/gear mysphere sphere 1.0
+/gear mybox box 2.0 2.0 2.0
+/gear mytorus torus 2.0 0.5
+/gear mygyroid gyroid 1.0 0.1
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/sdf</span> — Parse a user-defined SDF expression</p>
+                
+                <pre>
+Syntax: /sdf "<expression>" [param=value ...]
+
+Parameters:
+  expression  - Mathematical expression in x, y, z
+  param=value - Named parameters to substitute
+
+Operators: +, -, *, /, ^, sin, cos, sqrt, abs, exp, log
+Variables: x, y, z, and any named parameters
+                </pre>
+                
+                <p><strong>Examples:</strong></p>
+                
+                <pre>
+/sdf "x^2 + y^2 + z^2 - 1"
+/sdf "sqrt(x^2 + y^2) - 1" a=1
+/sdf "sin(x*a) + cos(y*b)" a=2 b=3
+                </pre>
+                
+                <!-- Query Functions -->
+                <h4 id="ug-query-functions">Query Functions</h4>
+                
+                <p><span class="function-name">/probe</span> — Query SDF value at a point</p>
+                
+                <pre>
+Syntax: /probe <gear> <x> <y> <z>
+
+Returns: Signed distance value
+  Negative = inside surface
+  Zero = on surface
+  Positive = outside surface
+
+Example:
+  /probe mysphere 0.0 0.0 0.0
+  → -1.0000 (center is 1 unit inside)
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/gradient</span> — Compute gradient vector</p>
+                
+                <pre>
+Syntax: /gradient <gear> <x> <y> <z>
+
+Returns: Gradient vector ∇φ = (∂φ/∂x, ∂φ/∂y, ∂φ/∂z)
+
+Notes:
+  - Points toward increasing distance (outward from surface)
+  - For exact SDFs, |∇φ| = 1 away from surface
+  - Computed via central finite differences
+
+Example:
+  /gradient mysphere 0.5 0.0 0.0
+  → [1.0000, 0.0000, 0.0000]
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/normal</span> — Compute surface normal</p>
+                
+                <pre>
+Syntax: /normal <gear> <x> <y> <z>
+
+Returns: Unit normal vector (normalized gradient)
+
+Example:
+  /normal mysphere 0.0 0.0 1.0
+  → [0.0000, 0.0000, 1.0000]
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/curvature</span> — Compute mean curvature</p>
+                
+                <pre>
+Syntax: /curvature <gear> <x> <y> <z>
+
+Returns: Mean curvature κ = ∇·(∇φ/|∇φ|) / 2
+
+Notes:
+  - Positive for convex regions
+  - Negative for concave regions
+  - Zero for flat regions
+
+Example:
+  /curvature mysphere 0.0 0.0 1.0
+  → 1.0000 (sphere radius 1 has curvature 1)
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/laplacian</span> — Compute Laplacian</p>
+                
+                <pre>
+Syntax: /laplacian <gear> <x> <y> <z>
+
+Returns: Δφ = ∂²φ/∂x² + ∂²φ/∂y² + ∂²φ/∂z²
+
+Notes:
+  - For exact SDFs, Δφ ≈ curvature information
+  - Useful for heat equation, wave equation applications
+
+Example:
+  /laplacian mysphere 0.5 0.0 0.0
+  → 2.0000
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/divergence</span> — Compute vector field divergence</p>
+                
+                <pre>
+Syntax: /divergence <gear> <x> <y> <z>
+
+Returns: ∇·F where F = ∇φ
+
+Example:
+  /divergence mysphere 0.0 0.0 0.0
+  → 3.0000
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/flow</span> — Trace streamline (gradient flow)</p>
+                
+                <pre>
+Syntax: /flow <gear> <x> <y> <z> <steps>
+
+Returns: Array of points along gradient flow line
+
+Notes:
+  - Follows gradient direction
+  - Useful for visualization, path planning
+
+Example:
+  /flow mysphere 0.5 0.0 0.0 10
+  → Points from (0.5, 0, 0) flowing outward
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/levelset</span> — Project to isosurface</p>
+                
+                <pre>
+Syntax: /levelset <gear> <iso> <x> <y> <z>
+
+Returns: Point projected to isosurface φ = iso
+
+Notes:
+  - Default iso=0 projects to surface
+  - Uses iterative gradient projection
+
+Example:
+  /levelset mysphere 0.0 0.5 0.0 0.0
+  → (1.0, 0.0, 0.0) - projected to sphere surface
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/geodesic</span> — Compute geodesic path</p>
+                
+                <pre>
+Syntax: /geodesic <gear> <x1> <y1> <z1> <x2> <y2> <z2> <steps>
+
+Returns: Array of points forming geodesic path on surface
+
+Notes:
+  - Locally shortest path on surface
+  - Iterative optimization algorithm
+
+Example:
+  /geodesic mysphere 0 0 1 0 0 -1 20
+  → Path from north pole to south pole
+                </pre>
+                
+                <!-- CSG Functions -->
+                <h4 id="ug-csg-functions">CSG Functions</h4>
+                
+                <p><span class="function-name">/union</span> — Boolean union</p>
+                
+                <pre>
+Syntax: /union <gear1> <gear2> <result_name>
+
+Returns: New gear representing A ∪ B
+
+Example:
+  /union sphere1 box1 combined
+  → Creates 'combined' = sphere1 ∪ box1
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/intersect</span> — Boolean intersection</p>
+                
+                <pre>
+Syntax: /intersect <gear1> <gear2> <result_name>
+
+Returns: New gear representing A ∩ B
+
+Example:
+  /intersect sphere1 box1 overlap
+  → Creates 'overlap' = sphere1 ∩ box1
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/subtract</span> — Boolean subtraction</p>
+                
+                <pre>
+Syntax: /subtract <gear1> <gear2> <result_name>
+
+Returns: New gear representing A - B
+
+Example:
+  /subtract box1 sphere1 carved
+  → Creates 'carved' = box1 - sphere1
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/blend</span> — Smooth blend</p>
+                
+                <pre>
+Syntax: /blend <gear1> <gear2> <k> <result_name>
+
+Parameters:
+  k - Smoothing factor (0.01 to 1.0)
+    Small k = sharp transition
+    Large k = smooth transition
+
+Returns: New gear with smooth blend between shapes
+
+Example:
+  /blend sphere1 sphere2 0.3 smooth_shape
+  → Smoothly blended union
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/morph</span> — Linear morph between shapes</p>
+                
+                <pre>
+Syntax: /morph <gear1> <gear2> <t> <result_name>
+
+Parameters:
+  t - Morph parameter (0.0 to 1.0)
+    t=0 = gear1
+    t=1 = gear2
+    t=0.5 = halfway morph
+
+Returns: New gear at intermediate morph state
+
+Example:
+  /morph sphere box 0.5 hybrid
+  → 50% morph between sphere and box
+                </pre>
+                
+                <!-- Advanced Usage -->
+                <h4 id="ug-advanced">Advanced Usage</h4>
+                
+                <p><span class="function-name">/diff</span> — User-defined differential operator</p>
+                
+                <pre>
+Syntax: /diff <gear> "<spec>" <x> <y> <z>
+
+Parameters:
+  spec - Differential specification like "d3xd2ydz"
+        (partial derivatives, powers sum to order)
+
+Examples:
+  /diff mysphere "dxdx" 0 0 0.5     → ∂²φ/∂x²
+  /diff mysphere "d3x" 0 0 0.5      → ∂³φ/∂x³
+  /diff mysphere "dxdydz" 0 0 0.5   → ∂³φ/∂x∂y∂z
+                </pre>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+                
+                <p><span class="function-name">/throttle</span> — Set compliance slack</p>
+                
+                <pre>
+Syntax: /throttle <value>
+
+Parameters:
+  value - Step size h for finite differences
+         Default: 1e-6
+         Range: 1e-8 to 0.1
+
+Notes:
+  - Smaller h = more precise, less robust
+  - Larger h = more tolerant, less precise
+  - "AK-47 Slack": larger h for noisy/discrete data
+
+Example:
+  /throttle 0.001
+  → Set h = 0.001 (1e-3)
+                </pre>
+                
+                <!-- Parameter Reference -->
+                <h4 id="ug-parameters">Parameter Reference</h4>
+                
+                <table style="width: 100%;">
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Default</th>
+                        <th>Range</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>throttle (h)</td>
+                        <td>1e-6</td>
+                        <td>1e-8 to 0.1</td>
+                        <td>Finite difference step size</td>
+                    </tr>
+                    <tr>
+                        <td>blend factor (k)</td>
+                        <td>0.5</td>
+                        <td>0.01 to 1.0</td>
+                        <td>CSG blend smoothness</td>
+                    </tr>
+                    <tr>
+                        <td>morph (t)</td>
+                        <td>0.5</td>
+                        <td>0.0 to 1.0</td>
+                        <td>Morph interpolation</td>
+                    </tr>
+                    <tr>
+                        <td>flow steps</td>
+                        <td>10</td>
+                        <td>1 to 10000</td>
+                        <td>Streamline integration steps</td>
+                    </tr>
+                    <tr>
+                        <td>geodesic steps</td>
+                        <td>20</td>
+                        <td>2 to 1000</td>
+                        <td>Path discretization</td>
+                    </tr>
+                </table>
+                
+                <h4>Return Value Interpretation</h4>
+                
+                <table style="width: 100%;">
+                    <tr>
+                        <th>Query</th>
+                        <th>Negative</th>
+                        <th>Zero</th>
+                        <th>Positive</th>
+                    </tr>
+                    <tr>
+                        <td>/probe</td>
+                        <td>Inside surface</td>
+                        <td>On surface</td>
+                        <td>Outside surface</td>
+                    </tr>
+                    <tr>
+                        <td>/curvature</td>
+                        <td>Concave</td>
+                        <td>Flat/inflection</td>
+                        <td>Convex</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Antikythera Digital v2.0 | GEOM-CALC Architecture</p>
+        <p>© 2025 GrugBot420 / Bindboss</p>
+        <p><em>"Listening to nature before theorizing."</em></p>
+    </footer>
+
+    <script>
+        function showTab(tabId, btn) {
+            // Hide all tab contents in the same container
+            var container = btn.closest('.tab-container');
+            var contents = container.querySelectorAll('.tab-content');
+            contents.forEach(function(content) {
+                content.classList.remove('active');
+            });
+            
+            // Deactivate all buttons in the same container
+            var buttons = container.querySelectorAll('.tab-btn');
+            buttons.forEach(function(button) {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab and activate button
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>
