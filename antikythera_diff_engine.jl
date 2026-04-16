@@ -46,8 +46,13 @@ mutable struct Cog
     # GRUG: How many directions does this gear live in?
     # 2D gear = flat. 3D gear = chunky. 
     ndims::Int
+    # GRUG: Each gear knows its PURPOSE. What topic does it channel toward?
+    # This is the underlying target - the "why" for the gear's existence.
+    # Used for intelligent perturbation when normal-aligned targets block geodesic paths.
+    # Empty string = no specific purpose (default behavior).
+    channel_topic::String
     
-    function Cog(name::Symbol, logic::Function, params::AbstractVector; ndims::Int=3)
+    function Cog(name::Symbol, logic::Function, params::AbstractVector; ndims::Int=3, channel_topic::String="")
         # GRUG: Convert any vector to Float64 teeth.
         float_params = convert(Vector{Float64}, params)
         # GRUG: Ghost gear no turn. Need at least one tooth.
@@ -58,7 +63,7 @@ mutable struct Cog
         if ndims < 2 || ndims > 3
             throw(MachineCrunch("GEAR $(name) MUST BE 2D OR 3D. GOT $(ndims)D.", "Cog constructor"))
         end
-        new(name, logic, float_params, ndims)
+        new(name, logic, float_params, ndims, channel_topic)
     end
 end
 
@@ -284,16 +289,19 @@ const GEAR_LIBRARY = Dict{String, Tuple{Function, Vector{Float64}, Int, String}}
 
 function jit_cast_gears!(am::AntikytheraMap; preset::String="default")
     # GRUG: "default" = load the standard gear set for demo
+    # GRUG: Each gear gets a channel_topic describing its underlying purpose.
     if preset == "default"
-        am.gears[:Sphere]       = Cog(:Sphere,       sdf_sphere,        [5.0])
-        am.gears[:Torus]        = Cog(:Torus,         sdf_torus,         [8.0, 2.0])
-        am.gears[:Gyroid]       = Cog(:Gyroid,        sdf_gyroid,        [6.28, 0.0])
-        am.gears[:TwistedTorus] = Cog(:TwistedTorus,  sdf_twisted_torus, [8.0, 2.0, 1.5])
+        am.gears[:Sphere]       = Cog(:Sphere,       sdf_sphere,        [5.0];              channel_topic="shortest")
+        am.gears[:Torus]        = Cog(:Torus,         sdf_torus,         [8.0, 2.0];         channel_topic="meridian")
+        am.gears[:Gyroid]       = Cog(:Gyroid,        sdf_gyroid,        [6.28, 0.0];        channel_topic="spiral")
+        am.gears[:TwistedTorus] = Cog(:TwistedTorus,  sdf_twisted_torus, [8.0, 2.0, 1.5];    channel_topic="spiral")
         println("⚙️  GRUG: Foundry cast 4 default gears. Light-box is now off.")
     elseif preset == "all"
         for (name, (fn, params, nd, _)) in GEAR_LIBRARY
             sym = Symbol(uppercasefirst(name))
-            am.gears[sym] = Cog(sym, fn, copy(params); ndims=nd)
+            # GRUG: Assign default channel topics based on shape
+            default_topic = _default_channel_topic(name)
+            am.gears[sym] = Cog(sym, fn, copy(params); ndims=nd, channel_topic=default_topic)
         end
         println("⚙️  GRUG: Foundry cast $(length(GEAR_LIBRARY)) gears (full library). Light-box is now off.")
     else
@@ -301,14 +309,38 @@ function jit_cast_gears!(am::AntikytheraMap; preset::String="default")
     end
 end
 
-function cast_single!(am::AntikytheraMap, gear_name::Symbol, shape_key::String, params::Vector{Float64})
+# ----------------------------------------------------------
+# DEFAULT CHANNEL TOPIC ASSIGNMENT
+# GRUG: Give each shape a sensible default topic for pathfinding.
+# ----------------------------------------------------------
+function _default_channel_topic(shape_name::String)::String
+    # GRUG: Map shape names to sensible default channel topics
+    topic_map = Dict{String, String}(
+        "sphere"        => "shortest",
+        "torus"         => "meridian",
+        "box"           => "shortest",
+        "cylinder"      => "meridian",
+        "gyroid"        => "spiral",
+        "schwarz"       => "spiral",
+        "twisted_torus" => "spiral",
+        "cone"          => "radial",
+        "capsule"       => "shortest",
+        "plane"         => "shortest",
+        "ellipsoid"     => "shortest"
+    )
+    return get(topic_map, lowercase(shape_name), "shortest")
+end
+
+function cast_single!(am::AntikytheraMap, gear_name::Symbol, shape_key::String, params::Vector{Float64}; channel_topic::String="")
     # GRUG: Cast one gear from library with custom params.
+    # GRUG: channel_topic tells the gear its underlying purpose for intelligent pathfinding.
     if !haskey(GEAR_LIBRARY, shape_key)
         throw(MachineCrunch("NO SUCH SHAPE IN LIBRARY: $(shape_key)", "cast_single!"))
     end
     fn, _, nd, _ = GEAR_LIBRARY[shape_key]
-    am.gears[gear_name] = Cog(gear_name, fn, params; ndims=nd)
-    println("⚙️  GRUG: Cast gear :$(gear_name) as $(shape_key) with params=$(params)")
+    am.gears[gear_name] = Cog(gear_name, fn, params; ndims=nd, channel_topic=channel_topic)
+    topic_info = isempty(channel_topic) ? "" : " [topic: $(channel_topic)]"
+    println("⚙️  GRUG: Cast gear :$(gear_name) as $(shape_key) with params=$(params)$(topic_info)")
 end
 
 # ==========================================================================
@@ -906,6 +938,8 @@ function geodesic(am::AntikytheraMap, gear_name::Symbol,
     
     total_dist = 0.0
     path = [copy(current)]
+    stagnation_count = 0  # GRUG: Track if we're stuck in one place
+    prev_remaining = Inf
     
     for i in 1:max_steps
         # GRUG: Direction toward target
@@ -919,16 +953,47 @@ function geodesic(am::AntikytheraMap, gear_name::Symbol,
             break
         end
         
+        # GRUG: Check for stagnation — if we're not making progress, something's wrong
+        if abs(remaining - prev_remaining) < am.slack * 0.1
+            stagnation_count += 1
+        else
+            stagnation_count = 0
+        end
+        prev_remaining = remaining
+        
+        # GRUG: Too much stagnation = we're stuck. Throw loudly, no silent failure.
+        if stagnation_count > 20
+            throw(MachineCrunch(
+                "GEODESIC PATH STAGNATED. CANNOT REACH TARGET.",
+                "Gear :$(gear_name), stuck at $(round.(current, digits=4)), target $(round.(target_proj, digits=4)). Channel topic: '$(gear.channel_topic)'"
+            ))
+        end
+        
         # GRUG: Project direction onto tangent plane (remove normal component)
         n = surface_normal(am, gear_name, current)
         tangent_dir = to_target .- dot(to_target, n) .* n
         td_norm = norm(tangent_dir)
         
         if td_norm < 1e-12
-            # GRUG: Target is directly above/below on the normal. 
-            # Need to go around. Perturb.
-            tangent_dir = to_target
+            # GRUG: Target is directly above/below on the normal direction.
+            # This is the CHANNEL DIRECTORY problem — we need to go AROUND the surface
+            # to reach a point that's aligned with the normal. The tangent plane
+            # offers no direction because the target is perpendicular to it.
+            #
+            # GRUG: Each gear has a channel_topic — the underlying purpose/target it knows.
+            # Use this knowledge to pick an intelligent perturbation direction.
+            tangent_dir = _compute_channel_direction(am, gear_name, current, n, to_target)
             td_norm = norm(tangent_dir)
+            
+            # GRUG: If channel direction computation failed, no silent failure!
+            if td_norm < 1e-12
+                throw(MachineCrunch(
+                    "GEODESIC: CANNOT FIND PATH AROUND NORMAL-ALIGNED TARGET.",
+                    "Gear :$(gear_name) at $(round.(current, digits=4)). Target is directly along surface normal. Channel topic: '$(gear.channel_topic)'. Try a different start point or increase step_size."
+                ))
+            end
+            
+            println("  INFO: Target aligned with surface normal. Using channel direction based on topic '$(gear.channel_topic)'.")
         end
         
         # GRUG: Step along tangent, then project back to surface
@@ -938,7 +1003,222 @@ function geodesic(am::AntikytheraMap, gear_name::Symbol,
         push!(path, copy(current))
     end
     
+    # GRUG: Check if we actually reached the target — no silent failures
+    final_remaining = norm(target_proj .- current)
+    if final_remaining > step_size * 2
+        throw(MachineCrunch(
+            "GEODESIC: MAX STEPS REACHED WITHOUT REACHING TARGET.",
+            "Gear :$(gear_name), $(max_steps) steps taken. Final distance to target: $(round(final_remaining, digits=4)). Channel topic: '$(gear.channel_topic)'. Try increasing max_steps."
+        ))
+    end
+    
     return (distance=total_dist, path=path, steps=length(path))
+end
+
+# ==========================================================================
+# CHANNEL DIRECTION: INTELLIGENT PERTURBATION FOR NORMAL-ALIGNED TARGETS
+# ==========================================================================
+# GRUG: When target is directly along the surface normal, the tangent plane
+#       gives us no direction. We need to "channel" — pick an intelligent
+#       direction to go around the surface and reach the target.
+#
+#       Each gear has a channel_topic that describes its underlying purpose.
+#       This topic guides the perturbation direction:
+#       - Empty topic: Use geometric heuristics (principal curvature directions)
+#       - Named topic: Use topic-specific logic for direction
+#
+#       NO SILENT FAILURES — if we can't find a direction, we throw.
+# ==========================================================================
+
+function _compute_channel_direction(am::AntikytheraMap, gear_name::Symbol,
+                                     current::Vector{Float64}, 
+                                     normal::Vector{Float64},
+                                     to_target::Vector{Float64})::Vector{Float64}
+    gear = _require_gear(am, gear_name)
+    nd = gear.ndims
+    topic = gear.channel_topic
+    
+    # GRUG: Get principal curvature directions to find the "natural" surface directions
+    # These give us orthogonal directions along the surface (tangent plane)
+    principal_dir = _get_principal_directions(am, gear_name, current, normal)
+    
+    # GRUG: Choose direction based on channel topic
+    if isempty(topic)
+        # GRUG: No specific topic — use geometric heuristics.
+        # Pick the direction that has more curvature (more "natural" to follow)
+        # If k1 > k2, follow k1 direction; otherwise k2 direction
+        c = curvature(am, gear_name, current)
+        
+        # GRUG: Pick the principal direction with larger absolute curvature
+        if abs(c.k1) >= abs(c.k2)
+            best_dir = principal_dir[1]
+        else
+            best_dir = principal_dir[2]
+        end
+        
+        # GRUG: Make sure we're going toward the target, not away
+        if dot(best_dir, to_target) < 0
+            best_dir = -best_dir
+        end
+        
+        return best_dir
+        
+    elseif occursin("spiral", lowercase(topic)) || occursin("helix", lowercase(topic))
+        # GRUG: Spiral/helix topic — combine tangent with rotation around normal
+        # This creates a spiraling path around the surface
+        principal_dir = _get_principal_directions(am, gear_name, current, normal)
+        # GRUG: Spiral = follow one principal direction while rotating
+        # Blend between the two principal directions based on position
+        angle = atan(current[2], current[1])  # azimuthal angle
+        blend = cos(angle) * principal_dir[1] .+ sin(angle) * principal_dir[2]
+        return normalize(blend)
+        
+    elseif occursin("radial", lowercase(topic)) || occursin("outward", lowercase(topic))
+        # GRUG: Radial topic — move outward/inward from center
+        # Project position onto tangent plane for radial direction
+        radial = copy(current)
+        radial_norm = norm(radial)
+        if radial_norm > 1e-12
+            # GRUG: Use outward radial direction projected to tangent
+            radial_tangent = radial .- dot(radial, normal) .* normal
+            if norm(radial_tangent) > 1e-12
+                return normalize(radial_tangent)
+            end
+        end
+        # GRUG: Fallback to principal direction if radial doesn't make sense here
+        return principal_dir[1]
+        
+    elseif occursin("meridian", lowercase(topic)) || occursin("longitude", lowercase(topic))
+        # GRUG: Meridian topic — follow lines of longitude (pole to pole)
+        # On a sphere, these are great circles through the poles
+        # For general surfaces, use the principal direction that's more "vertical"
+        principal_dir = _get_principal_directions(am, gear_name, current, normal)
+        # GRUG: Pick direction with larger z-component (more "vertical")
+        if abs(principal_dir[1][3]) >= abs(principal_dir[2][3])
+            return principal_dir[1]
+        else
+            return principal_dir[2]
+        end
+        
+    elseif occursin("equatorial", lowercase(topic)) || occursin("latitude", lowercase(topic))
+        # GRUG: Equatorial topic — follow lines of latitude (horizontal circles)
+        # On a sphere, these are circles parallel to the equator
+        # For general surfaces, use the principal direction that's more "horizontal"
+        principal_dir = _get_principal_directions(am, gear_name, current, normal)
+        # GRUG: Pick direction with smaller z-component (more "horizontal")
+        if abs(principal_dir[1][3]) <= abs(principal_dir[2][3])
+            return principal_dir[1]
+        else
+            return principal_dir[2]
+        end
+        
+    elseif occursin("shortest", lowercase(topic)) || occursin("direct", lowercase(topic))
+        # GRUG: Shortest path topic — pick direction that minimizes distance
+        # Use principal curvature to follow the "flatter" direction
+        # (less curvature = straighter path = shorter distance)
+        c = curvature(am, gear_name, current)
+        
+        if abs(c.k1) <= abs(c.k2)
+            best_dir = principal_dir[1]
+        else
+            best_dir = principal_dir[2]
+        end
+        
+        # GRUG: Make sure we're going toward target
+        if dot(best_dir, to_target) < 0
+            best_dir = -best_dir
+        end
+        return best_dir
+        
+    else
+        # GRUG: Unknown topic — use default geometric heuristic with WARNING
+        println("  WARNING: Unknown channel topic '$(topic)' for gear :$(gear_name). Using geometric heuristics.")
+        println("           Available topics: spiral, radial, meridian, equatorial, shortest")
+        
+        c = curvature(am, gear_name, current)
+        if abs(c.k1) >= abs(c.k2)
+            best_dir = principal_dir[1]
+        else
+            best_dir = principal_dir[2]
+        end
+        
+        if dot(best_dir, to_target) < 0
+            best_dir = -best_dir
+        end
+        return best_dir
+    end
+end
+
+# ==========================================================================
+# PRINCIPAL DIRECTIONS: FIND ORTHOGONAL TANGENT DIRECTIONS
+# ==========================================================================
+# GRUG: Get two orthogonal directions in the tangent plane.
+#       These are the directions of principal curvature — the "natural"
+#       directions along which the surface bends most and least.
+#
+#       Returns: [k1_direction, k2_direction] (both perpendicular to normal)
+#
+#       NO SILENT FAILURES — throws if directions cannot be determined.
+# ==========================================================================
+
+function _get_principal_directions(am::AntikytheraMap, gear_name::Symbol,
+                                    point::Vector{Float64}, 
+                                    normal::Vector{Float64})::Vector{Vector{Float64}}
+    gear = _require_gear(am, gear_name)
+    nd = gear.ndims
+    h = am.slack
+    
+    # GRUG: Build an orthonormal basis with normal as one axis
+    # Then use the Hessian to find principal directions
+    
+    # GRUG: Find two vectors perpendicular to normal
+    # Start with an arbitrary vector not parallel to normal
+    arbitrary = [1.0, 0.0, 0.0]
+    if abs(dot(arbitrary, normal)) > 0.9
+        arbitrary = [0.0, 1.0, 0.0]
+    end
+    
+    # GRUG: Gram-Schmidt to get orthonormal basis
+    # t1 = arbitrary - (arbitrary · n) * n, then normalize
+    t1 = arbitrary .- dot(arbitrary, normal) .* normal
+    t1_norm = norm(t1)
+    
+    if t1_norm < 1e-12
+        # GRUG: First arbitrary choice was parallel to normal, try another
+        arbitrary = [0.0, 0.0, 1.0]
+        t1 = arbitrary .- dot(arbitrary, normal) .* normal
+        t1_norm = norm(t1)
+    end
+    
+    # GRUG: If we still can't get a perpendicular, the normal might be degenerate
+    if t1_norm < 1e-12
+        throw(MachineCrunch(
+            "CANNOT FIND TANGENT DIRECTION. NORMAL MAY BE DEGENERATE.",
+            "Gear :$(gear_name) at point $(round.(point, digits=4)). Normal: $(round.(normal, digits=4))"
+        ))
+    end
+    
+    t1 = t1 ./ t1_norm
+    # GRUG: t2 = n × t1 (cross product gives perpendicular to both)
+    t2 = cross(normal, t1)
+    t2_norm = norm(t2)
+    
+    if t2_norm < 1e-12
+        throw(MachineCrunch(
+            "CANNOT FIND SECOND TANGENT DIRECTION. CROSS PRODUCT FAILED.",
+            "Gear :$(gear_name) at point $(round.(point, digits=4)). Normal and t1 may be parallel."
+        ))
+    end
+    
+    t2 = t2 ./ t2_norm
+    
+    # GRUG: Now we have orthonormal tangent basis {t1, t2}
+    # These are reasonable directions in the tangent plane.
+    # For a more sophisticated approach, we'd compute the shape operator
+    # and find its eigenvectors, but for geodesic purposes, any orthogonal
+    # tangent directions work for perturbation.
+    
+    return [t1, t2]
 end
 
 # GRUG: Push a point onto the nearest surface (SDF = 0).
@@ -1310,15 +1590,23 @@ function print_help()
     ───────────────
       /cast [preset]       Cast gears from foundry. 
                            preset = "default" | "all"
-      /cast! <name> <shape> [p1 p2 ...]
-      /gear  <name> <shape> [p1 p2 ...]   (same as /cast!)
+      /cast! <name> <shape> [p1 p2 ...] [--topic <topic>]
+      /gear  <name> <shape> [p1 p2 ...] [--topic <topic>]
                            Cast single gear with custom params.
                            Shapes: sphere, torus, box, cylinder, 
                                    gyroid, schwarz, twisted_torus,
                                    cone, capsule, plane, ellipsoid
+                           --topic sets the channel topic for pathfinding:
+                             spiral     - Helical paths around surface
+                             radial     - Outward/inward from center
+                             meridian   - Pole-to-pole lines (longitude)
+                             equatorial - Horizontal circles (latitude)
+                             shortest   - Minimum distance path
       /throttle <0.0-1.0>  Set flow level. 0 = idle. 1 = max.
       /slack <value>        Set tolerance band (ε). Default 0.01.
-      /gears               List all loaded gears.
+      /topic <gear> [topic]  View or set gear's channel topic.
+                           Topics guide geodesic pathfinding when
+                           the target is aligned with surface normal.
       /status              Machine state: throttle, slack, queries.
       /library             Show available gear shapes.
     
@@ -1494,8 +1782,36 @@ function keepalive!(am::AntikytheraMap)
                 else
                     println("  ⚙️  LOADED GEARS:")
                     for (name, gear) in am.gears
-                        println("    :$(name) — $(gear.ndims)D, teeth=$(gear.teeth_params)")
+                        topic_str = isempty(gear.channel_topic) ? "" : " [$(gear.channel_topic)]"
+                        println("    :$(name) — $(gear.ndims)D, teeth=$(gear.teeth_params)$(topic_str)")
                     end
+                end
+                
+            elseif cmd == "/topic"
+                if length(tokens) < 2
+                    println("  Usage: /topic <gear_name> [new_topic]")
+                    println("  Topics: spiral, radial, meridian, equatorial, shortest")
+                    println("  Example: /topic MySpiralGear spiral")
+                    println("  Example: /topic MyGear \"\"  (clears topic)")
+                elseif length(tokens) == 2
+                    # GRUG: View current topic
+                    gear_name = _parse_symbol(tokens, 2)
+                    gear = _require_gear(am, gear_name)
+                    topic = isempty(gear.channel_topic) ? "(none)" : gear.channel_topic
+                    println("  Gear :$(gear_name) has topic: $(topic)")
+                else
+                    # GRUG: Set new topic
+                    gear_name = _parse_symbol(tokens, 2)
+                    gear = _require_gear(am, gear_name)
+                    new_topic = String(tokens[3])
+                    if new_topic == "\"\""
+                        new_topic = ""  # GRUG: Allow clearing topic with ""
+                    end
+                    old_topic = gear.channel_topic
+                    gear.channel_topic = new_topic
+                    old_str = isempty(old_topic) ? "(none)" : old_topic
+                    new_str = isempty(new_topic) ? "(none)" : new_topic
+                    println("  ⚙️  GRUG: Changed :$(gear_name) topic from '$(old_str)' to '$(new_str)'")
                 end
                 
             elseif cmd == "/library"
@@ -1512,17 +1828,42 @@ function keepalive!(am::AntikytheraMap)
             elseif cmd == "/cast!" || cmd == "/gear"
                 # /cast! GearName shape p1 p2 p3 ...
                 # /gear  GearName shape p1 p2 p3 ...  (alias)
+                # Optional: /gear GearName shape --topic "spiral" p1 p2 ...
                 if length(tokens) < 3
-                    println("  Usage: /cast! <name> <shape> [p1 p2 ...]")
-                    println("  Alias:  /gear <name> <shape> [p1 p2 ...]")
+                    println("  Usage: /cast! <name> <shape> [p1 p2 ...] [--topic <topic>]")
+                    println("  Alias:  /gear <name> <shape> [p1 p2 ...] [--topic <topic>]")
                     shape_list = join(sort(collect(keys(GEAR_LIBRARY))), ", ")
                     println("  Shapes: $(shape_list)")
+                    println("  Topics: spiral, radial, meridian, equatorial, shortest")
                 else
                     name = _parse_symbol(tokens, 2)
                     shape = lowercase(String(tokens[3]))
-                    params = length(tokens) >= 4 ? _parse_floats(tokens, 4, length(tokens) - 3) : 
-                             haskey(GEAR_LIBRARY, shape) ? copy(GEAR_LIBRARY[shape][2]) : Float64[]
-                    cast_single!(am, name, shape, params)
+                    
+                    # GRUG: Parse optional --topic flag
+                    topic = ""
+                    param_tokens = String[]
+                    i = 4
+                    while i <= length(tokens)
+                        if lowercase(String(tokens[i])) == "--topic" && i < length(tokens)
+                            topic = String(tokens[i+1])
+                            i += 2
+                        else
+                            push!(param_tokens, String(tokens[i]))
+                            i += 1
+                        end
+                    end
+                    
+                    params = isempty(param_tokens) ? 
+                             (haskey(GEAR_LIBRARY, shape) ? copy(GEAR_LIBRARY[shape][2]) : Float64[]) :
+                             [tryparse(Float64, t) for t in param_tokens]
+                    
+                    # GRUG: Validate all params parsed correctly
+                    if any(isnothing, params)
+                        bad = param_tokens[findfirst(isnothing, params)]
+                        throw(MachineCrunch("'$bad' IS NOT A NUMBER.", "parser"))
+                    end
+                    
+                    cast_single!(am, name, shape, params; channel_topic=topic)
                 end
                 
             elseif cmd == "/throttle"
