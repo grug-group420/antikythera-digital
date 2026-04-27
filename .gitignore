@@ -1,23 +1,4 @@
-# Julia
-*.jl.cov
-*.jl.*.cov
-*.jl.mem
 Manifest.toml
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-build/
-dist/
-*.pdf
-
-# Logs
-*.log
+*.cov
+docs/build/
+docs/site/

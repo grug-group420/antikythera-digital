@@ -7,7 +7,7 @@
 # If this passes, the machine lives.
 # ==========================================================================
 
-include("antikythera_diff_engine.jl")
+using Antikythera
 using Printf
 using LinearAlgebra
 
